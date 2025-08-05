@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Let's Shoot - Squigler Coin Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #fef8e7;
+    }
+    canvas {
+      display: block;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      color: #000;
+      background: #ffdf6c;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    #wallet {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 18px;
+      background: #eee;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <div id="wallet"><button onclick="connectWallet()">Connect Wallet</button></div>
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    let canvas = document.getElementById("gameCanvas");
+    let ctx = canvas.getContext("2d");
+    let score = 0;
+    let targets = [];
+    let player = { x: 50, y: 50 };
+    let keys = {};
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function drawPlayer() {
+      ctx.fillStyle = "blue";
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawTargets() {
+      ctx.fillStyle = "gold";
+      targets.forEach(t => {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function updateTargets() {
+      targets.forEach(t => t.y += 1);
+      targets = targets.filter(t => t.y < canvas.height);
+    }
+
+    function checkCollisions() {
+      targets = targets.filter(t => {
+        let dx = player.x - t.x;
+        let dy = player.y - t.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 20) {
+          score++;
+          document.getElementById("score").innerText = "Score: " + score;
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function spawnTarget() {
+      targets.push({ x: Math.random() * canvas.width, y: 0 });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      drawTargets();
+    }
+
+    function update() {
+      if (keys["ArrowUp"]) player.y -= 5;
+      if (keys["ArrowDown"]) player.y += 5;
+      if (keys["ArrowLeft"]) player.x -= 5;
+      if (keys["ArrowRight"]) player.x += 5;
+      updateTargets();
+      checkCollisions();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup", e => keys[e.key] = false);
+
+    setInterval(spawnTarget, 1000);
+    gameLoop();
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          document.getElementById("wallet").innerHTML = "Wallet: " + accounts[0];
+        } catch (error) {
+          console.error("Wallet connection failed", error);
+        }
+      } else {
+        alert("MetaMask not found. Please install it.");
+      }
+    }
+  </script>
+</body>
+</html>
